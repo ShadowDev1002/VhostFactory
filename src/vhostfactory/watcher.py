@@ -20,11 +20,22 @@ class VhostEventHandler(FileSystemEventHandler):
 
     def on_created(self, event):
         if event.is_directory:
-            self._handle_new_domain(event.src_path)
+            parent = os.path.dirname(event.src_path)
+            if os.path.abspath(parent) == os.path.abspath(self.watch_dir):
+                self._handle_new_domain(event.src_path)
+        else:
+            filename = os.path.basename(event.src_path)
+            if filename in ("index.php", "package.json"):
+                domain_dir = os.path.dirname(event.src_path)
+                parent = os.path.dirname(domain_dir)
+                if os.path.abspath(parent) == os.path.abspath(self.watch_dir):
+                    self._handle_stack_change(domain_dir)
 
     def on_deleted(self, event):
         if event.is_directory:
-            self._handle_deleted_domain(event.src_path)
+            parent = os.path.dirname(event.src_path)
+            if os.path.abspath(parent) == os.path.abspath(self.watch_dir):
+                self._handle_deleted_domain(event.src_path)
 
     def _handle_new_domain(self, dir_path):
         domain = os.path.basename(dir_path)
@@ -69,6 +80,31 @@ class VhostEventHandler(FileSystemEventHandler):
         finally:
             self.processing.discard(domain)
 
+    def _handle_stack_change(self, dir_path):
+        domain = os.path.basename(dir_path)
+        new_stack = StackDetector.detect(dir_path)
+
+        if not self.nginx_manager.is_auto_generated(domain):
+            return
+
+        sites_available = self.nginx_manager.sites_available
+        config_path = os.path.join(sites_available, domain)
+        try:
+            with open(config_path, 'r') as f:
+                current = f.read()
+        except Exception:
+            return
+
+        # Only regenerate if stack has changed
+        if f"# stack: {new_stack}" in current:
+            return
+
+        logger.info(f"Stack changed for {domain}, regenerating config as {new_stack}")
+
+        self.nginx_manager.delete_config(domain)
+        self.ssl_manager.delete_certificate(domain)
+        self._handle_new_domain(dir_path)
+
     def _handle_deleted_domain(self, dir_path):
         domain = os.path.basename(dir_path)
 
@@ -98,7 +134,7 @@ class VhostWatcher:
     def start(self):
         try:
             os.makedirs(self.watch_dir, exist_ok=True)
-            self.observer.schedule(self.event_handler, self.watch_dir, recursive=False)
+            self.observer.schedule(self.event_handler, self.watch_dir, recursive=True)
             self.observer.start()
             logger.info(f"Started watching directory: {self.watch_dir}")
         except Exception as e:
