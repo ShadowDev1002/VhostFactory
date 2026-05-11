@@ -4,6 +4,7 @@ setup(
     name="vhostfactory",
     version="1.0.0",
     description="Automatic Nginx + SSL setup daemon for Ubuntu servers",
+    python_requires=">=3.9",
     author="Your Name",
     packages=find_packages(),
     install_requires=[
