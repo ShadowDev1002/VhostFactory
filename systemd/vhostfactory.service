@@ -6,7 +6,8 @@ Wants=vhostfactory-renewal.timer
 [Service]
 Type=simple
 User=root
-ExecStart=/usr/bin/python3 -m vhostfactory.main
+Environment=PYTHONPATH=/opt/vhostfactory
+ExecStart=/opt/vhostfactory/venv/bin/python -m vhostfactory.main
 Restart=always
 RestartSec=10
 StandardOutput=journal

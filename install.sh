@@ -9,14 +9,17 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-echo "Installing Python dependencies..."
-pip3 install -r requirements.txt
+VENV=/opt/vhostfactory/venv
 
 echo "Creating /opt/vhostfactory directory..."
 mkdir -p /opt/vhostfactory
 cp -r src/vhostfactory /opt/vhostfactory/
 cp -r templates /opt/vhostfactory/
-cp requirements.txt /opt/vhostfactory/
+
+echo "Setting up Python virtualenv..."
+python3 -m venv "$VENV"
+"$VENV/bin/pip" install --quiet --upgrade pip
+"$VENV/bin/pip" install --quiet -r requirements.txt
 
 echo "Creating /etc/vhostfactory directory..."
 mkdir -p /etc/vhostfactory
@@ -26,7 +29,6 @@ if [ ! -f /etc/vhostfactory/config.yml ]; then
     echo "Please edit /etc/vhostfactory/config.yml with your settings"
 fi
 
-mkdir -p /var/log
 touch /var/log/vhostfactory.log
 chmod 644 /var/log/vhostfactory.log
 
@@ -36,9 +38,6 @@ cp systemd/vhostfactory-renewal.service /etc/systemd/system/
 cp systemd/vhostfactory-renewal.timer /etc/systemd/system/
 
 systemctl daemon-reload
-
-echo "Installing VhostFactory package..."
-pip3 install -e .
 
 echo ""
 echo "Installation complete!"
