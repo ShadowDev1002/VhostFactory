@@ -8,9 +8,9 @@ setup(
     author="Your Name",
     packages=find_packages(),
     install_requires=[
-        "watchdog==3.0.0",
-        "Jinja2==3.1.2",
-        "PyYAML==6.0",
+        "watchdog>=3.0.0",
+        "Jinja2>=3.1.2",
+        "PyYAML>=6.0",
     ],
     entry_points={
         "console_scripts": [
