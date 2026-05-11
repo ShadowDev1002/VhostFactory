@@ -11,6 +11,9 @@ fi
 
 VENV=/opt/vhostfactory/venv
 
+echo "Installing system dependencies..."
+apt-get install -y python3-venv python3-full > /dev/null 2>&1
+
 echo "Creating /opt/vhostfactory directory..."
 mkdir -p /opt/vhostfactory
 cp -r src/vhostfactory /opt/vhostfactory/
