@@ -44,28 +44,37 @@ class SSLManager:
             with open(nginx_config_path, 'r') as f:
                 content = f.read()
 
-            ssl_block = f"""
-    listen 443 ssl http2;
-    listen [::]:443 ssl http2;
-    ssl_certificate /etc/letsencrypt/live/{domain}/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/{domain}/privkey.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
-
-# HTTP to HTTPS redirect
-server {{
-    listen 80;
-    listen [::]:80;
-    server_name {domain};
-    return 301 https://$server_name$request_uri;
-}}
-"""
-
+            # Remove HTTP listen lines and placeholder comment from existing server block
+            content = content.replace("    listen 80;\n", "")
+            content = content.replace("    listen [::]:80;\n", "")
             content = content.replace(
-                "    # HTTPS redirect (will be updated after SSL creation)\n    # return 301 https://$server_name$request_uri;",
-                ssl_block
+                "    # HTTPS redirect (will be updated after SSL creation)\n"
+                "    # return 301 https://$server_name$request_uri;\n",
+                ""
             )
+
+            # Insert SSL directives right after opening server {
+            ssl_lines = (
+                f"    listen 443 ssl http2;\n"
+                f"    listen [::]:443 ssl http2;\n"
+                f"    ssl_certificate /etc/letsencrypt/live/{domain}/fullchain.pem;\n"
+                f"    ssl_certificate_key /etc/letsencrypt/live/{domain}/privkey.pem;\n"
+                f"    ssl_protocols TLSv1.2 TLSv1.3;\n"
+                f"    ssl_ciphers HIGH:!aNULL:!MD5;\n"
+                f"    ssl_prefer_server_ciphers on;\n"
+            )
+            content = content.replace("server {\n", f"server {{\n{ssl_lines}", 1)
+
+            # Append separate HTTP redirect block
+            redirect_block = (
+                f"\nserver {{\n"
+                f"    listen 80;\n"
+                f"    listen [::]:80;\n"
+                f"    server_name {domain};\n"
+                f"    return 301 https://$server_name$request_uri;\n"
+                f"}}\n"
+            )
+            content = content.rstrip() + "\n" + redirect_block
 
             with open(nginx_config_path, 'w') as f:
                 f.write(content)
