@@ -1,0 +1,28 @@
+# VhostFactory Configuration
+
+# Filesystem paths
+watch_directory: /var/www
+nginx_sites_available: /etc/nginx/sites-available
+nginx_sites_enabled: /etc/nginx/sites-enabled
+backup_directory: /etc/nginx/sites-backup
+
+# PHP-FPM configuration
+php_fpm_socket: /run/php/php-fpm.sock
+
+# Node.js reverse proxy configuration
+node_default_port: 3000
+
+# SSL/Certbot configuration
+certbot_email: admin@example.com
+certbot_agree_tos: true
+ssl_cert_directory: /etc/letsencrypt/live
+
+# Service configuration
+log_file: /var/log/vhostfactory.log
+log_level: INFO
+pid_file: /var/run/vhostfactory.pid
+
+# Auto-renewal
+renewal_timer_enabled: true
+renewal_check_hour: 2
+renewal_check_minute: 0
