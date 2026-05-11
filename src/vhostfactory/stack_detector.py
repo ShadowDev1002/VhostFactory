@@ -5,12 +5,6 @@ logger = logging.getLogger("vhostfactory")
 
 
 class StackDetector:
-    STACKS = {
-        "php": ["index.php"],
-        "node": ["package.json"],
-        "static": []
-    }
-
     @staticmethod
     def detect(directory_path):
         if not os.path.isdir(directory_path):
