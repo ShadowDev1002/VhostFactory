@@ -1,0 +1,50 @@
+#!/bin/bash
+
+set -e
+
+echo "Installing VhostFactory..."
+
+if [[ $EUID -ne 0 ]]; then
+    echo "This script must be run as root"
+    exit 1
+fi
+
+echo "Installing Python dependencies..."
+pip3 install -r requirements.txt
+
+echo "Creating /opt/vhostfactory directory..."
+mkdir -p /opt/vhostfactory
+cp -r src/vhostfactory /opt/vhostfactory/
+cp -r templates /opt/vhostfactory/
+cp requirements.txt /opt/vhostfactory/
+
+echo "Creating /etc/vhostfactory directory..."
+mkdir -p /etc/vhostfactory
+if [ ! -f /etc/vhostfactory/config.yml ]; then
+    cp config.yml.example /etc/vhostfactory/config.yml
+    echo "Created default config at /etc/vhostfactory/config.yml"
+    echo "Please edit /etc/vhostfactory/config.yml with your settings"
+fi
+
+mkdir -p /var/log
+touch /var/log/vhostfactory.log
+chmod 644 /var/log/vhostfactory.log
+
+echo "Installing systemd service..."
+cp systemd/vhostfactory.service /etc/systemd/system/
+cp systemd/vhostfactory-renewal.service /etc/systemd/system/
+cp systemd/vhostfactory-renewal.timer /etc/systemd/system/
+
+systemctl daemon-reload
+
+echo "Installing VhostFactory package..."
+pip3 install -e .
+
+echo ""
+echo "Installation complete!"
+echo ""
+echo "Next steps:"
+echo "1. Edit /etc/vhostfactory/config.yml with your settings"
+echo "2. Start the service: systemctl start vhostfactory"
+echo "3. Enable on boot: systemctl enable vhostfactory"
+echo "4. Check status: systemctl status vhostfactory"
