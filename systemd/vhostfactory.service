@@ -1,0 +1,17 @@
+[Unit]
+Description=VhostFactory - Automatic Nginx + SSL Setup Daemon
+After=network.target nginx.service
+Wants=vhostfactory-renewal.timer
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/python3 -m vhostfactory.main
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=vhostfactory
+
+[Install]
+WantedBy=multi-user.target
