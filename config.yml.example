@@ -2,6 +2,7 @@
 
 # Filesystem paths
 watch_directory: /var/www
+templates_dir: /opt/vhostfactory/templates
 nginx_sites_available: /etc/nginx/sites-available
 nginx_sites_enabled: /etc/nginx/sites-enabled
 backup_directory: /etc/nginx/sites-backup

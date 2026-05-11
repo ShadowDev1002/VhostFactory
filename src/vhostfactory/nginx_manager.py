@@ -14,7 +14,7 @@ class NginxManager:
         self.sites_enabled = config.get("nginx_sites_enabled")
 
     def generate_config(self, domain, stack_type, root_path=None):
-        template_dir = Path(__file__).parent.parent.parent / "templates"
+        template_dir = Path(self.config.get("templates_dir", "/opt/vhostfactory/templates"))
 
         template_map = {
             "php": "nginx_php.conf.j2",
