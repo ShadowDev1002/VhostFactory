@@ -67,7 +67,10 @@ class VhostEventHandler(FileSystemEventHandler):
             if not self.nginx_manager.enable_config(domain):
                 return
 
-            if self.ssl_manager.create_certificate(domain, dir_path):
+            if self.ssl_manager.certificate_exists(domain):
+                logger.info(f"SSL certificate already exists for {domain}, reusing")
+                self.ssl_manager.update_nginx_for_ssl(domain, config_path)
+            elif self.ssl_manager.create_certificate(domain, dir_path):
                 self.ssl_manager.update_nginx_for_ssl(domain, config_path)
             else:
                 logger.warning(f"SSL creation failed for {domain}, continuing with HTTP only")
