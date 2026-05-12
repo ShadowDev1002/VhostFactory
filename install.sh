@@ -15,6 +15,14 @@ if [[ $EUID -ne 0 ]]; then
     error "This script must be run as root"
 fi
 
+# Ensure we are running from the repo root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
+for required in src/vhostfactory templates config.yml.example systemd; do
+    [ -e "$required" ] || error "Required path '$required' not found — run install.sh from the repo root"
+done
+
 INSTALL_DIR=/opt/vhostfactory
 VENV="$INSTALL_DIR/venv"
 CONFIG_DIR=/etc/vhostfactory
@@ -30,6 +38,7 @@ apt-get install -y -qq \
     nginx \
     certbot \
     python3-certbot-nginx \
+    openssl \
     curl \
     software-properties-common
 
@@ -63,7 +72,7 @@ cp -r src/vhostfactory "$INSTALL_DIR/"
 cp -r templates "$INSTALL_DIR/"
 
 info "Setting up Python virtualenv..."
-python3 -m venv "$VENV"
+python3 -m venv --clear "$VENV"
 "$VENV/bin/pip" install --quiet --upgrade pip
 "$VENV/bin/pip" install --quiet -r requirements.txt
 
@@ -106,12 +115,20 @@ touch /var/log/vhostfactory.log
 chmod 644 /var/log/vhostfactory.log
 
 mkdir -p /var/www
-chown www-data:www-data /var/www
+# Only set ownership if /var/www is freshly created (no existing sites)
+if [ -z "$(ls -A /var/www 2>/dev/null)" ]; then
+    chown www-data:www-data /var/www
+fi
 
-# Install catch-all HTTPS server block to prevent Nginx serving wrong vhost
+# Catch-all HTTPS server block — prevents wrong vhost being served for unmatched domains
 CATCHALL=/etc/nginx/sites-available/catch-all-https
 if [ ! -f "$CATCHALL" ]; then
     info "Creating catch-all HTTPS server block..."
+    mkdir -p /etc/nginx/ssl
+    openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+        -keyout /etc/nginx/ssl/catch-all.key \
+        -out /etc/nginx/ssl/catch-all.crt \
+        -subj "/CN=catch-all" 2>/dev/null
     cat > "$CATCHALL" <<'EOF'
 # Catch-all for unmatched HTTPS requests
 server {
@@ -125,15 +142,9 @@ server {
     return 444;
 }
 EOF
-    mkdir -p /etc/nginx/ssl
-    if [ ! -f /etc/nginx/ssl/catch-all.crt ]; then
-        openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
-            -keyout /etc/nginx/ssl/catch-all.key \
-            -out /etc/nginx/ssl/catch-all.crt \
-            -subj "/CN=catch-all" 2>/dev/null
-    fi
-    ln -sf "$CATCHALL" /etc/nginx/sites-enabled/catch-all-https
 fi
+# Always ensure symlink exists (might be missing after manual deletion)
+ln -sf "$CATCHALL" /etc/nginx/sites-enabled/catch-all-https
 
 info "Installing systemd service..."
 cp systemd/vhostfactory.service /etc/systemd/system/
@@ -146,8 +157,8 @@ systemctl enable vhostfactory-renewal.timer
 
 nginx -t && systemctl reload nginx
 
-info "Restarting VhostFactory..."
-systemctl restart vhostfactory || systemctl start vhostfactory
+info "Starting VhostFactory..."
+systemctl restart vhostfactory
 
 echo ""
 info "Installation complete!"
