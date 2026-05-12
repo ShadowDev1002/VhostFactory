@@ -13,13 +13,15 @@ class SSLManager:
 
     def create_certificate(self, domain, web_root):
         try:
-            cmd = (
-                f"certbot certonly --webroot -w {web_root} -d {domain}"
-                f" --email {self.certbot_email} --agree-tos --non-interactive --quiet"
-            )
+            cmd = [
+                "certbot", "certonly", "--webroot",
+                "-w", web_root,
+                "-d", domain,
+                "--email", self.certbot_email,
+                "--agree-tos", "--non-interactive", "--quiet"
+            ]
             result = subprocess.run(
                 cmd,
-                shell=True,
                 capture_output=True,
                 text=True,
                 timeout=60
@@ -87,10 +89,9 @@ class SSLManager:
 
     def delete_certificate(self, domain):
         try:
-            cmd = f"certbot delete --cert-name {domain} --non-interactive --quiet"
+            cmd = ["certbot", "delete", "--cert-name", domain, "--non-interactive", "--quiet"]
             result = subprocess.run(
                 cmd,
-                shell=True,
                 capture_output=True,
                 text=True,
                 timeout=30

@@ -76,7 +76,7 @@ class NginxManager:
     def reload_nginx(self):
         try:
             result = subprocess.run(
-                ["nginx", "-s", "reload"],
+                ["systemctl", "reload", "nginx"],
                 capture_output=True,
                 text=True,
                 timeout=10

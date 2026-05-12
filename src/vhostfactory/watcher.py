@@ -1,5 +1,6 @@
 import os
 import logging
+import threading
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
@@ -17,6 +18,7 @@ class VhostEventHandler(FileSystemEventHandler):
         self.nginx_manager = NginxManager(config)
         self.ssl_manager = SSLManager(config)
         self.processing = set()
+        self._lock = threading.Lock()
 
     def on_created(self, event):
         if event.is_directory:
@@ -40,10 +42,10 @@ class VhostEventHandler(FileSystemEventHandler):
     def _handle_new_domain(self, dir_path):
         domain = os.path.basename(dir_path)
 
-        if domain in self.processing:
-            return
-
-        self.processing.add(domain)
+        with self._lock:
+            if domain in self.processing:
+                return
+            self.processing.add(domain)
 
         try:
             logger.info(f"Processing new domain: {domain}")
