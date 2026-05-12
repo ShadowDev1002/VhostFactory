@@ -8,6 +8,10 @@ server {
 
     try_files $uri $uri/ =404;
 
+    location ~ /\.well-known {
+        allow all;
+    }
+
     location ~ /\. {
         deny all;
     }

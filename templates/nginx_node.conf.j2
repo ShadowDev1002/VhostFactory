@@ -5,6 +5,10 @@ server {
     listen [::]:80;
     server_name {{ domain }};
 
+    location ~ /\.well-known {
+        allow all;
+    }
+
     location / {
         proxy_pass http://localhost:{{ node_port }};
         proxy_http_version 1.1;
